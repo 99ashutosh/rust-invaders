@@ -11,7 +11,6 @@ const SPRITE_SCALE: f32 = 0.5;
 
 // endregion: --- Asset Constants
 
-
 // region: --- Resources
 
 pub struct WinSize {
@@ -19,8 +18,11 @@ pub struct WinSize {
     pub h: f32,
 }
 
-// endregion: --- Resources
+struct GameTextures {
+    player: Handle<Image>,
+}
 
+// endregion: --- Resources
 
 fn main() {
     App::new()
@@ -33,28 +35,37 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_startup_system(setup_system)
+        .add_startup_system_to_stage(StartupStage::PostStartup, player_spawn_system)
         .run();
 }
 
 fn setup_system(
-    mut commands: Commands, 
+    mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut windows: ResMut<Windows>,
 ) {
-
     // Add a camera
     commands.spawn_bundle(Camera2dBundle::default());
 
     // capture window size
     let window = windows.get_primary_mut().unwrap();
-    let(win_w, win_h) = (window.width(), window.height());
+    let (win_w, win_h) = (window.width(), window.height());
 
     // position window
     window.set_position(IVec2::new(2780, 4900));
 
-    let win_size = WinSize{w: win_w, h: win_h};
+    let win_size = WinSize { w: win_w, h: win_h };
+    commands.insert_resource(win_size);
 
-    // Add a player 
+    // add GameTextures resource
+    let game_textures = GameTextures{
+        player: asset_server.load(PLAYER_SPRITE)
+    };
+
+    commands.insert_resource(game_textures);
+
+    /* Relpaced by player_spawn_system
+    // Add a player
     let bottom = -win_h / 2.;
 
     commands.spawn_bundle(SpriteBundle {
@@ -66,6 +77,24 @@ fn setup_system(
         },
         ..Default::default()
     });
+     */
 }
 
+fn player_spawn_system(
+    mut commands: Commands,
+    game_testures: Res<GameTextures>,
+    win_size: Res<WinSize>,
+) {
+    // Add a player
+    let bottom = -win_size.h / 2.;
 
+    commands.spawn_bundle(SpriteBundle {
+        texture: game_testures.player.clone(),
+        transform: Transform {
+            translation: Vec3::new(0., bottom + PLAYER_SIZE.1 / 2. * SPRITE_SCALE + 5., 10.),
+            scale: Vec3::new(SPRITE_SCALE, SPRITE_SCALE, 1.),
+            ..Default::default()
+        },
+        ..Default::default()
+    });
+}
