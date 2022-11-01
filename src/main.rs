@@ -2,9 +2,11 @@
 
 use bevy::prelude::*;
 use components::{Movable, Velocity};
+use enemy::EnemyPlugin;
 use player::PlayerPlugin;
 
 mod components;
+mod enemy;
 mod player;
 
 // region: --- Asset Constants
@@ -13,6 +15,12 @@ const PLAYER_SPRITE: &str = "player_a_01.png";
 const PLAYER_SIZE: (f32, f32) = (144., 75.);
 const PLAYER_LASER: &str = "laser_a_01.png";
 const PLAYER_LASER_SIZE: (f32, f32) = (9., 54.);
+
+const ENEMY_SPRITE: &str = "enemy_a_01.png";
+const ENEMY_SIZE: (f32, f32) = (144., 75.);
+const ENEMY_LASER: &str = "laser_b_01.png";
+const ENEMY_LASER_SIZE: (f32, f32) = (17., 55.);
+
 
 const SPRITE_SCALE: f32 = 0.5;
 
@@ -29,6 +37,8 @@ pub struct WinSize {
 struct GameTextures {
     player: Handle<Image>,
     player_laser: Handle<Image>,
+    enemy: Handle<Image>,
+    enemy_laser: Handle<Image>,
 }
 
 // endregion: --- Resources
@@ -51,6 +61,7 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_plugin(PlayerPlugin)
+        .add_plugin(EnemyPlugin)
         .add_startup_system(setup_system)
         .add_system(moveable_system)
         .run();
@@ -78,6 +89,8 @@ fn setup_system(
     let game_textures = GameTextures{
         player: asset_server.load(PLAYER_SPRITE),
         player_laser: asset_server.load(PLAYER_LASER),
+        enemy: asset_server.load(ENEMY_SPRITE),
+        enemy_laser: asset_server.load(ENEMY_LASER),
     };
 
     commands.insert_resource(game_textures);
