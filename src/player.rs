@@ -1,6 +1,6 @@
 use crate::{
-    components::{Player, Velocity, Movable},
-    GameTextures, WinSize, PLAYER_SIZE, PLAYER_SPRITE, SPRITE_SCALE, TIME_STEP, BASE_SPEED,
+    components::{Movable, Player, Velocity},
+    GameTextures, WinSize, BASE_SPEED, PLAYER_SIZE, PLAYER_SPRITE, SPRITE_SCALE, TIME_STEP,
 };
 use bevy::prelude::*;
 
@@ -33,10 +33,11 @@ fn player_spawn_system(
             ..Default::default()
         })
         .insert(Player)
-        .insert(Movable {auto_despawn: false})
+        .insert(Movable {
+            auto_despawn: false,
+        })
         .insert(Velocity { x: 0., y: 0. });
 }
-
 
 fn player_fire_system(
     mut commands: Commands,
@@ -46,30 +47,36 @@ fn player_fire_system(
 ) {
     if let Ok(player_tf) = query.get_single() {
         if kb.just_pressed(KeyCode::Space) {
-            let (x,y) = (player_tf.translation.x, player_tf.translation.y);
+            let (x, y) = (player_tf.translation.x, player_tf.translation.y);
+            let x_offset = PLAYER_SIZE.0 / 2. * SPRITE_SCALE - 5.;
 
-            commands.spawn_bundle(SpriteBundle{
-                texture: game_textures.player_laser.clone(),
-                transform: Transform {
-                    translation: Vec3::new(x, y, 0.),
-                    scale: Vec3::new(SPRITE_SCALE, SPRITE_SCALE, 1.),
-                    ..Default::default()
-                },
-                ..Default::default()
-            })
-            .insert(Movable {auto_despawn: true})
-            .insert(Velocity { x: 0., y: 1. });
+            let mut spawn_laser = |x_offset: f32| {
+                commands
+                    .spawn_bundle(SpriteBundle {
+                        texture: game_textures.player_laser.clone(),
+                        transform: Transform {
+                            translation: Vec3::new(x + x_offset, y + 15., 0.),
+                            scale: Vec3::new(SPRITE_SCALE, SPRITE_SCALE, 1.),
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    })
+                    .insert(Movable { auto_despawn: true })
+                    .insert(Velocity { x: 0., y: 1. });
+            };
+
+            spawn_laser(x_offset);
+            spawn_laser(-x_offset);
         }
     }
 }
 
-
 fn player_keyboard_event_system(
     kb: Res<Input<KeyCode>>,
     mut query: Query<&mut Velocity, With<Player>>,
-){
+) {
     if let Ok(mut velocity) = query.get_single_mut() {
-        velocity.x = if kb.pressed(KeyCode::Left){
+        velocity.x = if kb.pressed(KeyCode::Left) {
             -1.
         } else if kb.pressed(KeyCode::Right) {
             1.
@@ -78,4 +85,3 @@ fn player_keyboard_event_system(
         }
     }
 }
-
