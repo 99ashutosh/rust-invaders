@@ -1,6 +1,7 @@
 #![allow(unused)]
 
 use bevy::prelude::*;
+use components::{Movable, Velocity};
 use player::PlayerPlugin;
 
 mod components;
@@ -51,6 +52,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(PlayerPlugin)
         .add_startup_system(setup_system)
+        .add_system(moveable_system)
         .run();
 }
 
@@ -94,4 +96,27 @@ fn setup_system(
         ..Default::default()
     });
      */
+}
+
+fn moveable_system(
+    mut commands: Commands,
+    win_size: Res<WinSize>,
+    mut query: Query<(Entity, &Velocity, &mut Transform, &Movable)>
+) {
+    for (entity, velocity, mut transform, movable) in query.iter_mut() {
+        let translation = &mut transform.translation;
+        translation.y += velocity.y * TIME_STEP * BASE_SPEED;
+        translation.x += velocity.x * TIME_STEP * BASE_SPEED;
+
+        if movable.auto_despawn {
+            const MARGIN: f32 = 200.;
+            if translation.y > win_size.h / 2. + MARGIN
+            || translation.y < -win_size.h / 2. - MARGIN
+            || translation.x > win_size.w / 2. + MARGIN
+            || translation.x < -win_size.w / 2. - MARGIN {
+                println!("\tINFO\t Despawned {entity:?}");
+                commands.entity(entity).despawn();
+            }
+        }
+    }
 }
