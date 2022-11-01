@@ -95,21 +95,6 @@ fn setup_system(
     };
 
     commands.insert_resource(game_textures);
-
-    /* Relpaced by player_spawn_system
-    // Add a player
-    let bottom = -win_h / 2.;
-
-    commands.spawn_bundle(SpriteBundle {
-        texture: asset_server.load(PLAYER_SPRITE),
-        transform: Transform {
-            translation: Vec3::new(0., bottom + PLAYER_SIZE.1 / 2. * SPRITE_SCALE + 5., 10.),
-            scale: Vec3::new(SPRITE_SCALE, SPRITE_SCALE, 1.),
-            ..Default::default()
-        },
-        ..Default::default()
-    });
-     */
 }
 
 fn moveable_system(
