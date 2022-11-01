@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use rand::{thread_rng, Rng};
 
-use crate::{GameTextures, SPRITE_SCALE, PLAYER_SIZE, WinSize};
+use crate::{GameTextures, SPRITE_SCALE, PLAYER_SIZE, WinSize, components::{Enemy, SpriteSize}, ENEMY_LASER_SIZE, ENEMY_SIZE};
 
 pub struct EnemyPlugin;
 
@@ -33,5 +33,7 @@ fn enemy_spawn_system(
                 ..Default::default()
             },
             ..Default::default()
-        });
+        })
+        .insert(Enemy)
+        .insert(SpriteSize::from(ENEMY_SIZE));
 }

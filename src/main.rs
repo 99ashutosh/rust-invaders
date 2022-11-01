@@ -1,7 +1,7 @@
 #![allow(unused)]
 
-use bevy::prelude::*;
-use components::{Movable, Velocity};
+use bevy::{prelude::*, math::Vec3Swizzles, sprite::collide_aabb::collide};
+use components::{Movable, Velocity, FromPlayer, SpriteSize, Enemy, Laser};
 use enemy::EnemyPlugin;
 use player::PlayerPlugin;
 
@@ -64,6 +64,7 @@ fn main() {
         .add_plugin(EnemyPlugin)
         .add_startup_system(setup_system)
         .add_system(moveable_system)
+        .add_system(player_laser_hit_enemy_system)
         .run();
 }
 
@@ -129,6 +130,40 @@ fn moveable_system(
             || translation.x < -win_size.w / 2. - MARGIN {
                 println!("\tINFO\t Despawned {entity:?}");
                 commands.entity(entity).despawn();
+            }
+        }
+    }
+}
+
+
+fn player_laser_hit_enemy_system(
+    mut commands: Commands,
+    laser_query: Query<(Entity, &Transform, &SpriteSize), (With<Laser>, With<FromPlayer>)>,
+    enemy_query: Query<(Entity, &Transform, &SpriteSize), With<Enemy>>
+) {
+    
+    // iterate through the lasers
+    for (laser_entity, laser_tf, laser_size) in laser_query.iter() {
+        let laser_scale = Vec2::from(laser_tf.scale.xy());
+
+        // iterate through enemies
+        for (enemy_entity, enemy_tf, enemy_size) in enemy_query.iter() {
+            let enemy_scale = Vec2::from(enemy_tf.scale.xy());
+
+            // determine if collision
+            let collision = collide(
+                laser_tf.translation,
+                laser_size.0 * laser_scale,
+                enemy_tf.translation,
+                enemy_size.0 * enemy_scale,
+            );
+
+            // perform collision
+            if let Some(_) = collision {
+                // remove the enemy
+                commands.entity(enemy_entity).despawn();
+                //remove the laser
+                commands.entity(laser_entity).despawn();
             }
         }
     }
