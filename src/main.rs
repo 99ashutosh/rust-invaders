@@ -1,5 +1,7 @@
 #![allow(unused)]
 
+use std::collections::HashSet;
+
 use bevy::{prelude::*, math::Vec3Swizzles, sprite::collide_aabb::collide};
 use components::{Movable, Velocity, FromPlayer, SpriteSize, Enemy, Laser, ExplosionToSpawn, ExplosionTimer, Explosion};
 use enemy::EnemyPlugin;
@@ -44,12 +46,17 @@ struct GameTextures {
     explosion: Handle<TextureAtlas>,
 }
 
+
+struct EnemyCount(u32);
+
 // endregion: --- Resources
 
 // region: --- Game Constants
 
 const TIME_STEP: f32 = 1. / 60.;
 const BASE_SPEED: f32 = 500.;
+
+const ENEMY_MAX: u32 = 2;
 
 // endregion: --- Game Constants
 
@@ -108,6 +115,7 @@ fn setup_system(
     };
 
     commands.insert_resource(game_textures);
+    commands.insert_resource(EnemyCount(0));
 }
 
 fn moveable_system(
@@ -133,19 +141,26 @@ fn moveable_system(
     }
 }
 
-
 fn player_laser_hit_enemy_system(
     mut commands: Commands,
+    mut enemy_count: ResMut<EnemyCount>,
     laser_query: Query<(Entity, &Transform, &SpriteSize), (With<Laser>, With<FromPlayer>)>,
     enemy_query: Query<(Entity, &Transform, &SpriteSize), With<Enemy>>
 ) {
-    
+    let mut despawned_entities: HashSet<Entity> = HashSet::new();
     // iterate through the lasers
     for (laser_entity, laser_tf, laser_size) in laser_query.iter() {
+        if despawned_entities.contains(&laser_entity) {
+            continue;
+        }
         let laser_scale = Vec2::from(laser_tf.scale.xy());
 
         // iterate through enemies
         for (enemy_entity, enemy_tf, enemy_size) in enemy_query.iter() {
+            if despawned_entities.contains(&enemy_entity) ||
+                despawned_entities.contains(&laser_entity) {
+                    continue;
+                }
             let enemy_scale = Vec2::from(enemy_tf.scale.xy());
 
             // determine if collision
@@ -160,8 +175,11 @@ fn player_laser_hit_enemy_system(
             if let Some(_) = collision {
                 // remove the enemy
                 commands.entity(enemy_entity).despawn();
+                despawned_entities.insert(enemy_entity);
+                enemy_count.0 -= 1;
                 //remove the laser
                 commands.entity(laser_entity).despawn();
+                despawned_entities.insert(laser_entity);
 
                 //spawn the explosion
                 commands.spawn().insert(ExplosionToSpawn(enemy_tf.translation.clone()));
@@ -199,7 +217,7 @@ fn explosion_animation_system(
     mut commands: Commands,
     time: Res<Time>,
     mut query: Query<(Entity, &mut ExplosionTimer, &mut TextureAtlasSprite), With<Explosion>>,
-) {
+) { 
     for (entity, mut timer, mut sprite) in query.iter_mut() {
         timer.0.tick(time.delta());
         if timer.0.finished() {
